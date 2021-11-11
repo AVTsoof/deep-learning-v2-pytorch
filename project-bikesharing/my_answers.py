@@ -1,6 +1,26 @@
+## AVTsoof:
+## References:
+## https://towardsdatascience.com/https-medium-com-piotr-skalski92-deep-dive-into-deep-networks-math-17660bc376ba
+## https://towardsdatascience.com/lets-code-a-neural-network-in-plain-numpy-ae7e74410795
+## https://dustinstansbury.github.io/theclevermachine/derivation-backpropagation
+        
+
 import numpy as np
 
+# activation functions
+def activation_sigmoid(Z):
+    return 1/(1 + np.exp(-Z))
 
+def activation_sigmoid_backward(Z):
+    return activation_sigmoid(Z) * (1 - activation_sigmoid(Z))
+
+def activation_in_to_out(Z):
+    return Z
+
+def activation_in_to_out_backward(Z):
+    return 1
+
+# define nn
 class NeuralNetwork(object):
     def __init__(self, input_nodes, hidden_nodes, output_nodes, learning_rate):
         # Set number of nodes in input, hidden and output layers.
@@ -15,12 +35,7 @@ class NeuralNetwork(object):
         self.weights_hidden_to_output = np.random.normal(0.0, self.hidden_nodes**-0.5, 
                                        (self.hidden_nodes, self.output_nodes))
         self.lr = learning_rate
-        
-        #### Set self.activation_function to your implemented sigmoid function ####
-        self.activation_function = lambda x : 1/(1 + np.exp(-x))
-        # derivative of sigmoid function
-        self.activation_function_derivative = lambda x : self.activation_function(x) * (1 - self.activation_function(x))
-        
+
 
     def train(self, features, targets):
         ''' Train the network on batch of features and targets. 
@@ -41,7 +56,18 @@ class NeuralNetwork(object):
                                                                         delta_weights_i_h, delta_weights_h_o)
         self.update_weights(delta_weights_i_h, delta_weights_h_o, n_records)
 
+    def forward_pass_single_layer(self, L_prev, W_curr, activation_function=activation_sigmoid):
+        '''
+            Arguments
+            ---------
+            L_prev: result from previous layer
+            W_curr: weights of current layer
+            activation_function: the function to apply to output
 
+        '''
+        return activation_function(np.dot(L_prev, W_curr))
+        
+        
     def forward_pass_train(self, X):
         ''' Implement forward pass here 
          
@@ -51,15 +77,33 @@ class NeuralNetwork(object):
 
         '''
         # Hidden layer
-        hidden_inputs = X.dot(self.weights_input_to_hidden) # signals into hidden layer
-        hidden_outputs = self.activation_function(hidden_inputs) # signals from hidden layer
+        hidden_inputs = X
+        hidden_outputs = self.forward_pass_single_layer(hidden_inputs, self.weights_input_to_hidden, activation_sigmoid)
 
         # Output layer
-        final_inputs = hidden_outputs.dot(self.weights_hidden_to_output) # signals into final output layer
-        final_outputs = final_inputs # f(x)=x ; signals from final output layer
+        final_inputs = hidden_outputs
+        final_outputs = self.forward_pass_single_layer(final_inputs, self.weights_hidden_to_output, activation_in_to_out)
         
         return final_outputs, hidden_outputs
 
+    def backpropagation_single_layer(self, dY, W, Z, X, backward_activation_function=activation_sigmoid_backward):
+        # X: input to layer
+        # W: weights of layer
+        # Z: output of layer (before activation)
+        # Y: output of layer (after activation)
+        
+        # for next backprop
+        dY_dZ = dY * backward_activation_funcltion(Z)
+        dZ_dX = W
+        dY_dX = np.dot(dZ_dX, dY_dZ.T)
+        
+        # for optimizer step
+        dZ_dW = X
+        dY_dW = np.dot(dY_dZ, dZ_dW.T)
+        
+        return dY_dX, dY_dW
+        
+    
     def backpropagation(self, final_outputs, hidden_outputs, X, y, delta_weights_i_h, delta_weights_h_o):
         ''' Implement backpropagation
          
@@ -70,9 +114,7 @@ class NeuralNetwork(object):
             delta_weights_i_h: change in weights from input to hidden layers
             delta_weights_h_o: change in weights from hidden to output layers
 
-        '''
-        ## AVTsoof: See (https://dustinstansbury.github.io/theclevermachine/derivation-backpropagation)
-        
+        '''      
         
         # Output error
         # Output layer error is the difference between desired target and actual output.
@@ -88,9 +130,19 @@ class NeuralNetwork(object):
         
         # TODO: Add Weight step (input to hidden) and Weight step (hidden to output).
         # Weight step (input to hidden)
-        delta_weights_i_h += None
-        # Weight step (hidden to output)
-        delta_weights_h_o += None
+        dY = 1
+        W = self.weights_input_to_hidden
+        Z = np.dot(X, W)
+        Y = activation_sigmoid(Z)
+        dY, dW = self.backpropagation_single_layer(dY, W, Z, X, activation_sigmoid_backward)
+        delta_weights_i_h += dW
+        
+        
+        W = self.weights_hidden_to_output
+        Z = np.dot(Y, W)
+        dY, dW = self.backpropagation_single_layer(dY, W, Z, X, activation_in_to_out_backward)
+        delta_weights_h_o += dW
+        
         return delta_weights_i_h, delta_weights_h_o
 
     def update_weights(self, delta_weights_i_h, delta_weights_h_o, n_records):
@@ -119,13 +171,14 @@ class NeuralNetwork(object):
         '''
         
         #### Implement the forward pass here ####
-        # TODO: Hidden layer - replace these values with the appropriate calculations.
-        hidden_inputs = None # signals into hidden layer
-        hidden_outputs = None # signals from hidden layer
+        # Hidden layer
+        hidden_inputs = features
+        hidden_outputs = self.forward_pass_single_layer(hidden_inputs, self.weights_input_to_hidden, activation_sigmoid)
+
+        # Output layer
+        final_inputs = hidden_outputs
+        final_outputs = self.forward_pass_single_layer(final_inputs, self.weights_hidden_to_output, activation_in_to_out)
         
-        # TODO: Output layer - Replace these values with the appropriate calculations.
-        final_inputs = None # signals into final output layer
-        final_outputs = None # signals from final output layer 
         
         return final_outputs
 
@@ -134,6 +187,6 @@ class NeuralNetwork(object):
 # Set your hyperparameters here
 ##########################################################
 iterations = 100
-learning_rate = 0.1
+learning_rate = 0.003
 hidden_nodes = 2
 output_nodes = 1
