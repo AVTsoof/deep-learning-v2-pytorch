@@ -142,3 +142,5 @@ cython_debug/
 # AVTsoof
 project-dog-classification/dogImages.zip
 project-dog-classification/lfw.zip
+project-dog-classification/lfw/
+project-dog-classification/dogImages/
