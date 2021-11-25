@@ -138,3 +138,7 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+# AVTsoof
+project-dog-classification/dogImages.zip
+project-dog-classification/lfw.zip
