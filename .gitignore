@@ -140,6 +140,7 @@ dmypy.json
 cython_debug/
 
 # AVTsoof
+*Zone.Identifier
 project-dog-classification/dogImages.zip
 project-dog-classification/lfw.zip
 project-dog-classification/lfw/
